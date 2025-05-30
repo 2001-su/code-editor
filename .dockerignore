@@ -1,4 +1,14 @@
+<<<<<<< HEAD
 node_modules
 build
 .dockerignore
 Dockerfile
+=======
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+.env
+venv/
+>>>>>>> 52c0831aa8da4a649b6e179535d46d818ac6a197
