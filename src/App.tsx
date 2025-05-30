@@ -10,13 +10,13 @@ function App() {
   const runCode = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://code-runner-backend-gtwu.onrender.com', {
+      const response = await fetch('https://code-runner-backend-gtwu.onrender.com/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, input }),
       });
       const data = await response.json();
-      setOutput(data.output);
+      setOutput(data.output || data.error || 'No output');
     } catch {
       setOutput('❌ Error connecting to backend.');
     }
