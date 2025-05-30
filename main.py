@@ -1,18 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import subprocess
 
 app = FastAPI()
 
-# Update this list with your actual frontend URL from Vercel
+# Your frontend URLs
 origins = [
-    "https://code-editor-fastapi-32gnuly1c-sushma-sharons-projects.vercel.app",  # <-- Replace with your real frontend URL
-    "http://localhost:3000",              # for local development
+    "https://code-editor-fastapi-32gnuly1c-sushma-sharons-projects.vercel.app",
+    "http://localhost:3000",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Restrict to your frontend origins
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,15 +23,24 @@ app.add_middleware(
 def read_root():
     return {"message": "Backend is running"}
 
+class CodeRequest(BaseModel):
+    code: str
+    input: str = ""  # default empty input
+
 @app.post("/run")
-def run_code(code: str):
+def run_code(request: CodeRequest):
     try:
-        # Run the code safely in a subprocess (you can sandbox this better)
-        result = subprocess.run(["python", "-c", code], capture_output=True, text=True, timeout=5)
+        # Run the code, provide input via stdin
+        result = subprocess.run(
+            ["python", "-c", request.code],
+            input=request.input,
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
         return {
             "output": result.stdout,
             "error": result.stderr
         }
     except Exception as e:
         return {"error": str(e)}
-
