@@ -1,33 +1,37 @@
-import docker
+import subprocess
 import uuid
-
-client = docker.from_env()
+import os
 
 def run_code_in_docker(code: str, user_input: str = "") -> dict:
-    container_name = f"code-runner-{uuid.uuid4().hex[:8]}"
-    try:
-        # Prepare Python command
-        code_command = f'echo """{code}""" > main.py && echo "{user_input}" > input.txt && cat input.txt | python main.py'
+    filename = f"/tmp/{uuid.uuid4().hex}.py"
+    input_file = f"/tmp/{uuid.uuid4().hex}.txt"
 
-        container = client.containers.run(
-            image="python:3.11-alpine",
-            command=["sh", "-c", code_command],
-            name=container_name,
-            detach=True,
-            stdin_open=True,
-            tty=True,
-            network_disabled=True,
-            mem_limit="100m"
+    try:
+        with open(filename, "w") as f:
+            f.write(code)
+        with open(input_file, "w") as f:
+            f.write(user_input)
+
+        result = subprocess.run(
+            ["python", filename],
+            input=open(input_file).read(),
+            capture_output=True,
+            text=True,
+            timeout=5
         )
 
-        result = container.wait(timeout=10)
-        logs = container.logs(stdout=True, stderr=True).decode()
-
-        container.remove()
-        return {"output": logs, "error": ""}
+        return {
+            "output": result.stdout,
+            "error": result.stderr
+        }
     except Exception as e:
+        return {
+            "output": "",
+            "error": str(e)
+        }
+    finally:
         try:
-            container.remove(force=True)
+            os.remove(filename)
+            os.remove(input_file)
         except:
             pass
-        return {"output": "", "error": str(e)}
