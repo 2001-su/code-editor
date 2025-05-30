@@ -1,18 +1,33 @@
-from fastapi import FastAPI, Request
-from pydantic import BaseModel
-from .runner import run_code_in_docker
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import subprocess
 
 app = FastAPI()
 
-class CodeRequest(BaseModel):
-    code: str
-    input: str = ""
+origins = [
+    "https://code-editor-fastapi-32gnuly1c-sushma-sharons-projects.vercel.app",
+    "http://localhost:3000",
+]
 
-@app.post("/run")
-async def run_code(request: CodeRequest):
-    result = run_code_in_docker(request.code, request.input)
-    return result
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
-async def root():
-    return {"message": "Backend is running!"}
+def read_root():
+    return {"message": "Backend is running"}
+
+@app.post("/run")
+def run_code(code: str):
+    try:
+        result = subprocess.run(["python", "-c", code], capture_output=True, text=True, timeout=5)
+        return {
+            "output": result.stdout,
+            "error": result.stderr
+        }
+    except Exception as e:
+        return {"error": str(e)}
